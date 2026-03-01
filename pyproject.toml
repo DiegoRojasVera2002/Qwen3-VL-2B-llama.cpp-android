@@ -1,0 +1,11 @@
+[project]
+name = "smolvlm-realtime-webcam"
+version = "0.1.0"
+description = "Paths AI - Asistente visual para personas invidentes usando SmolVLM-500M"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "opencv-python>=4.13.0.92",
+    "pyttsx3>=2.99",
+    "requests>=2.32.5",
+]
