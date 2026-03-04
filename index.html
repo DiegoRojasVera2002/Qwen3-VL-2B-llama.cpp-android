@@ -22,7 +22,6 @@
         h1 { font-size: 22px; color: #fff; letter-spacing: 1px; margin-top: 4px; }
         h1 span { color: #4ade80; }
 
-        /* ── Video + overlay ── */
         #videoContainer {
             position: relative;
             width: 100%;
@@ -59,34 +58,6 @@
 
         #captureCanvas { display: none; }
 
-        /* ── Chips de clases ── */
-        #classLegend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            width: 100%;
-            max-width: 640px;
-            min-height: 28px;
-        }
-
-        .chip {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-        }
-
-        .chip-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        /* ── Respuesta Qwen ── */
         #responseBox {
             width: 100%;
             max-width: 640px;
@@ -100,7 +71,6 @@
             color: #d1fae5;
         }
 
-        /* ── Controles ── */
         .controls-row {
             display: flex;
             gap: 10px;
@@ -133,7 +103,6 @@
 
         label { font-size: 13px; color: #9ca3af; }
 
-        /* ── Configuración avanzada ── */
         details { width: 100%; max-width: 640px; }
 
         summary {
@@ -190,8 +159,6 @@
 
     <canvas id="captureCanvas"></canvas>
 
-    <div id="classLegend"></div>
-
     <div id="responseBox">Iniciando PathsAI...</div>
 
     <div class="controls-row">
@@ -232,26 +199,42 @@
     </details>
 
     <script type="module">
-        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+        import { ImageSegmenter, FilesetResolver }
+            from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 
-        // Cachea el modelo en IndexedDB tras la primera descarga → funciona offline después
-        env.allowRemoteModels = true;
-        env.useBrowserCache   = true;
+        // ── Paleta de colores suaves para 21 clases DeepLab v3 (Pascal VOC) ──
+        // Índice 0 = background → transparente
+        // prettier-ignore
+        const PALETTE = new Uint8ClampedArray([
+          //  R    G    B    A
+              0,   0,   0,   0,   // 0  background
+            220, 120,  80, 130,   // 1  aeroplane
+            100, 210, 160, 130,   // 2  bicycle
+            240, 190,  80, 130,   // 3  bird
+             90, 150, 230, 130,   // 4  boat
+            230, 140,  90, 130,   // 5  bottle
+            170,  90, 230, 130,   // 6  bus
+             90, 200,  90, 130,   // 7  car
+            240, 130, 190, 130,   // 8  cat
+            200, 200,  80, 130,   // 9  chair
+            120, 230, 190, 130,   // 10 cow
+            240, 170, 120, 130,   // 11 diningtable
+            190, 120, 230, 130,   // 12 dog
+            240, 210, 120, 130,   // 13 horse
+            120, 200, 240, 130,   // 14 motorbike
+            240,  90,  90, 155,   // 15 person  (más visible, es obstáculo)
+             90, 230, 130, 130,   // 16 pottedplant
+            240, 190, 190, 130,   // 17 sheep
+            200, 170, 130, 130,   // 18 sofa
+            130, 130, 230, 130,   // 19 train
+            240, 240, 120, 130,   // 20 tvmonitor
+        ]);
 
-        // ── Paleta de colores para las clases ──────────────────────────────
-        const COLORS = [
-            [255, 80,  80 ], [80,  220, 80 ], [80,  80,  255],
-            [255, 220, 50 ], [200, 80,  255], [50,  220, 255],
-            [255, 140, 50 ], [50,  255, 180], [255, 80,  180],
-            [140, 255, 50 ], [50,  140, 255], [255, 180, 80 ],
-        ];
-
-        // ── DOM ────────────────────────────────────────────────────────────
+        // ── DOM ──────────────────────────────────────────────────────────────
         const video           = document.getElementById('videoFeed');
         const segCanvas       = document.getElementById('segCanvas');
         const captureCanvas   = document.getElementById('captureCanvas');
         const segStatus       = document.getElementById('segStatus');
-        const classLegend     = document.getElementById('classLegend');
         const responseBox     = document.getElementById('responseBox');
         const baseURL         = document.getElementById('baseURL');
         const instructionText = document.getElementById('instructionText');
@@ -262,14 +245,21 @@
         const ttsRate         = document.getElementById('ttsRate');
         const ttsRateLabel    = document.getElementById('ttsRateLabel');
 
-        // ── Estado ────────────────────────────────────────────────────────
+        // ── Estado ───────────────────────────────────────────────────────────
         let stream         = null;
         let isProcessing   = false;
         let qwenIntervalId = null;
-        let segmenter      = null;
         let segLoopActive  = false;
+        let imageSegmenter = null;
+        let lastVideoTime  = -1;
+        let frameCount     = 0;
+        let fpsTimer       = performance.now();
 
-        // ── Prompt por defecto ────────────────────────────────────────────
+        // Canvas auxiliar reutilizable para escalar la máscara
+        const tmpCanvas = document.createElement('canvas');
+        const tmpCtx    = tmpCanvas.getContext('2d', { willReadFrequently: false });
+
+        // ── Prompt ───────────────────────────────────────────────────────────
         instructionText.value = `Eres PathsAI, los ojos de una persona ciega que está caminando. Analiza la imagen y responde SIEMPRE en español con máximo 3 frases cortas y directas. Tu respuesta debe tener SIEMPRE esta estructura:
 
 PRIMERO — Describe brevemente qué hay adelante: el entorno, espacio o contexto general. Ejemplo: "Estás en un pasillo.", "Hay una sala con muebles.", "Estás frente a una puerta.", "Hay una calle con personas."
@@ -280,12 +270,11 @@ TERCERO — Da una instrucción de movimiento directa y accionable: "Gira a la i
 
 Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
 
-        // ── TTS ───────────────────────────────────────────────────────────
+        // ── TTS ──────────────────────────────────────────────────────────────
         ttsRate.addEventListener('input', () => {
             ttsRateLabel.textContent = parseFloat(ttsRate.value).toFixed(1);
         });
 
-        // Chrome bug: speechSynthesis se pausa a los ~15s
         setInterval(() => {
             if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
         }, 5000);
@@ -306,7 +295,7 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
             window.speechSynthesis.speak(utt);
         }
 
-        // ── Cámara ────────────────────────────────────────────────────────
+        // ── Cámara ───────────────────────────────────────────────────────────
         async function initCamera() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
@@ -328,98 +317,67 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
             return captureCanvas.toDataURL('image/jpeg', 0.75);
         }
 
-        // ── Dibujar máscaras de segmentación ─────────────────────────────
-        function drawMasks(results) {
-            const w   = segCanvas.width;
-            const h   = segCanvas.height;
-            const ctx = segCanvas.getContext('2d');
-            const imgData = ctx.createImageData(w, h);
+        // ── Dibujar máscara de categorías ────────────────────────────────────
+        function drawMask(result) {
+            const mask = result.categoryMask;
+            if (!mask) return;
+
+            const mw   = mask.width;
+            const mh   = mask.height;
+            const data = mask.getAsUint8Array();
+
+            // Redimensionar tmpCanvas si cambia la resolución
+            if (tmpCanvas.width !== mw || tmpCanvas.height !== mh) {
+                tmpCanvas.width  = mw;
+                tmpCanvas.height = mh;
+            }
+
+            const imgData = tmpCtx.createImageData(mw, mh);
             const pix     = imgData.data;
 
-            results.forEach((seg, i) => {
-                const [r, g, b] = COLORS[i % COLORS.length];
-                const mask = seg.mask;
-                const mw   = mask.width;
-                const mh   = mask.height;
-                // channels=1 para máscaras binarias; stride por si acaso
-                const ch   = mask.channels || 1;
-
-                for (let my = 0; my < mh; my++) {
-                    for (let mx = 0; mx < mw; mx++) {
-                        if (mask.data[(my * mw + mx) * ch] > 128) {
-                            const cx  = Math.floor(mx * w / mw);
-                            const cy  = Math.floor(my * h / mh);
-                            const idx = (cy * w + cx) * 4;
-                            pix[idx]     = r;
-                            pix[idx + 1] = g;
-                            pix[idx + 2] = b;
-                            pix[idx + 3] = 135; // ~53% opacidad
-                        }
-                    }
-                }
-            });
-
-            ctx.putImageData(imgData, 0, 0);
-
-            // Etiquetas sobre las máscaras
-            ctx.font = 'bold 13px sans-serif';
-            results.forEach((seg, i) => {
-                const [r, g, b] = COLORS[i % COLORS.length];
-                const mask = seg.mask;
-                const ch   = mask.channels || 1;
-
-                // Centroide por muestreo
-                let sx = 0, sy = 0, n = 0;
-                const step = 8;
-                for (let my = 0; my < mask.height; my += step) {
-                    for (let mx = 0; mx < mask.width; mx += step) {
-                        if (mask.data[(my * mask.width + mx) * ch] > 128) {
-                            sx += mx; sy += my; n++;
-                        }
-                    }
-                }
-                if (n === 0) return;
-
-                const cx    = Math.floor(sx / n * w / mask.width);
-                const cy    = Math.floor(sy / n * h / mask.height);
-                const label = seg.label;
-                const tw    = ctx.measureText(label).width;
-
-                ctx.fillStyle = 'rgba(0,0,0,0.65)';
-                ctx.fillRect(cx - 2, cy - 14, tw + 8, 17);
-                ctx.fillStyle = `rgb(${r},${g},${b})`;
-                ctx.fillText(label, cx + 2, cy);
-            });
-
-            // Chips de clases detectadas
-            classLegend.innerHTML = results.slice(0, 10).map((s, i) => {
-                const [r, g, b] = COLORS[i % COLORS.length];
-                return `<div class="chip">
-                    <div class="chip-dot" style="background:rgb(${r},${g},${b})"></div>
-                    ${s.label}
-                </div>`;
-            }).join('');
-        }
-
-        // ── Loop de segmentación (600ms) ──────────────────────────────────
-        async function segLoop() {
-            if (!segLoopActive) return;
-            const dataURL = captureDataURL();
-            if (dataURL) {
-                try {
-                    const t0      = Date.now();
-                    const results = await segmenter(dataURL);
-                    const ms      = Date.now() - t0;
-                    segStatus.textContent = `🟢 ${ms}ms · ${results.length} clases`;
-                    drawMasks(results);
-                } catch (e) {
-                    segStatus.textContent = `🔴 ${e.message}`;
-                }
+            // Mapeo rápido: índice de clase → color de PALETTE
+            for (let i = 0; i < data.length; i++) {
+                const c      = data[i] * 4;
+                pix[i * 4]   = PALETTE[c];
+                pix[i * 4+1] = PALETTE[c+1];
+                pix[i * 4+2] = PALETTE[c+2];
+                pix[i * 4+3] = PALETTE[c+3];
             }
-            setTimeout(segLoop, 600);
+
+            tmpCtx.putImageData(imgData, 0, 0);
+
+            // Escalar la máscara al tamaño del canvas overlay con suavizado
+            const ctx = segCanvas.getContext('2d');
+            ctx.clearRect(0, 0, segCanvas.width, segCanvas.height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'medium';
+            ctx.drawImage(tmpCanvas, 0, 0, segCanvas.width, segCanvas.height);
         }
 
-        // ── Inferencia Qwen ───────────────────────────────────────────────
+        // ── Loop de segmentación (RAF — tan rápido como el GPU permita) ──────
+        function segLoop(timestamp) {
+            if (!segLoopActive) return;
+            requestAnimationFrame(segLoop);
+
+            if (video.readyState < 2 || video.currentTime === lastVideoTime) return;
+            lastVideoTime = video.currentTime;
+
+            imageSegmenter.segmentForVideo(video, timestamp, (result) => {
+                drawMask(result);
+                result.close();
+
+                // FPS counter
+                frameCount++;
+                const now = performance.now();
+                if (now - fpsTimer >= 1000) {
+                    segStatus.textContent = `🟢 ${frameCount} FPS`;
+                    frameCount = 0;
+                    fpsTimer   = now;
+                }
+            });
+        }
+
+        // ── Inferencia Qwen ──────────────────────────────────────────────────
         async function sendToQwen() {
             if (!isProcessing) return;
             const dataURL = captureDataURL();
@@ -450,7 +408,7 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
             }
         }
 
-        // ── Controles ─────────────────────────────────────────────────────
+        // ── Controles ────────────────────────────────────────────────────────
         function handleStart() {
             if (!stream) { alert('Cámara no disponible'); return; }
             isProcessing  = true;
@@ -462,11 +420,10 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
             startButton.textContent = 'Detener';
             startButton.className   = 'stop';
 
-            const ms = parseInt(intervalSelect.value);
             sendToQwen();
-            qwenIntervalId = setInterval(sendToQwen, ms);
+            qwenIntervalId = setInterval(sendToQwen, parseInt(intervalSelect.value));
 
-            if (segmenter) segLoop();
+            if (imageSegmenter) requestAnimationFrame(segLoop);
         }
 
         function handleStop() {
@@ -476,16 +433,15 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
 
             startButton.textContent = 'Iniciar';
             startButton.className   = 'start';
-
             segCanvas.getContext('2d').clearRect(0, 0, segCanvas.width, segCanvas.height);
-            classLegend.innerHTML = '';
+            segStatus.textContent = '⏸️ Pausado';
         }
 
         startButton.addEventListener('click', () => {
             isProcessing ? handleStop() : handleStart();
         });
 
-        // ── Init ──────────────────────────────────────────────────────────
+        // ── Init ─────────────────────────────────────────────────────────────
         window.addEventListener('DOMContentLoaded', async () => {
             await initCamera();
 
@@ -494,15 +450,25 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
                 segCanvas.height = video.videoHeight;
             });
 
-            // Carga el modelo de segmentación en background
-            // Primera vez: ~15MB desde HuggingFace. Después: offline desde caché.
+            // Carga MediaPipe DeepLab v3
+            // Primera vez: descarga ~15MB (necesita internet una vez, luego offline)
             try {
-                segmenter = await pipeline(
-                    'image-segmentation',
-                    'Xenova/segformer-b0-finetuned-ade-512-512'
+                const vision = await FilesetResolver.forVisionTasks(
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
                 );
-                segStatus.textContent = '✅ Segmentador listo';
-                if (isProcessing) segLoop(); // por si ya presionó Iniciar
+
+                imageSegmenter = await ImageSegmenter.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite',
+                        delegate: 'GPU'
+                    },
+                    runningMode: 'VIDEO',
+                    outputCategoryMask: true,
+                    outputConfidenceMasks: false
+                });
+
+                segStatus.textContent = '✅ Segmentador listo (GPU)';
+                if (isProcessing) requestAnimationFrame(segLoop);
             } catch (e) {
                 segStatus.textContent = `⚠️ Sin segmentación: ${e.message}`;
                 console.error(e);
