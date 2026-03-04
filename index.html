@@ -200,10 +200,7 @@
     </details>
 
     <script type="module">
-        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
-
-        env.allowRemoteModels = true;
-        env.useBrowserCache   = true;
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
 
         // ── Paleta para 150 clases ADE20K — ángulo dorado para distribución uniforme ──
         function hslToRgb(h, s, l) {
@@ -466,14 +463,21 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
                 segCanvas.height = video.videoHeight;
             });
 
-            // Carga SegFormer ADE20K — 150 clases, colorea toda la escena
-            // Primera vez: ~15MB desde HuggingFace. Después: offline desde caché.
+            // SegFormer ADE20K — 150 clases, WebGPU si está disponible (5-10x más rápido)
             try {
+                const useWebGPU = !!navigator.gpu;
+                segStatus.textContent = `⏳ Cargando... (${useWebGPU ? 'WebGPU' : 'WASM'})`;
+
                 segmenter = await pipeline(
                     'image-segmentation',
-                    'Xenova/segformer-b0-finetuned-ade-512-512'
+                    'Xenova/segformer-b0-finetuned-ade-512-512',
+                    {
+                        device: useWebGPU ? 'webgpu' : 'wasm',
+                        dtype:  useWebGPU ? 'fp32'   : 'q8'    // q8 = 2x más rápido en WASM
+                    }
                 );
-                segStatus.textContent = '✅ Segmentador listo (150 clases)';
+
+                segStatus.textContent = `✅ Listo · ${useWebGPU ? 'WebGPU 🚀' : 'WASM (CPU)'}`;
                 if (isProcessing) segLoop();
             } catch (e) {
                 segStatus.textContent = `⚠️ Sin segmentación: ${e.message}`;
