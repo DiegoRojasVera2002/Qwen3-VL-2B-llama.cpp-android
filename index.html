@@ -4,492 +4,114 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PathsAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: -apple-system, sans-serif;
-            background: #0d0d0d;
-            color: #e0e0e0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            padding: 16px;
+            font-family: 'Nunito', sans-serif;
+            background: #FFFFFF;
             min-height: 100vh;
-        }
-
-        h1 { font-size: 22px; color: #fff; letter-spacing: 1px; margin-top: 4px; }
-        h1 span { color: #4ade80; }
-
-        #videoContainer {
-            position: relative;
-            width: 100%;
-            max-width: 640px;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #000;
-            border: 2px solid #222;
-        }
-
-        #videoFeed {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
-
-        #segCanvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            filter: blur(2px);  /* bordes suaves */
-        }
-
-        #segStatus {
-            position: absolute;
-            bottom: 8px; left: 8px;
-            background: rgba(0,0,0,0.75);
-            font-size: 11px;
-            font-family: monospace;
-            padding: 3px 8px;
-            border-radius: 4px;
-            color: #4ade80;
-        }
-
-        #captureCanvas { display: none; }
-
-        #responseBox {
-            width: 100%;
-            max-width: 640px;
-            background: #111827;
-            border: 1px solid #1f2937;
-            border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 14px;
-            line-height: 1.6;
-            min-height: 70px;
-            color: #d1fae5;
-        }
-
-        .controls-row {
             display: flex;
-            gap: 10px;
             align-items: center;
-            flex-wrap: wrap;
             justify-content: center;
+        }
+
+        .mobile-container {
             width: 100%;
-            max-width: 640px;
-        }
-
-        #startButton {
-            padding: 10px 28px;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        #startButton.start { background: #16a34a; color: #fff; }
-        #startButton.stop  { background: #dc2626; color: #fff; }
-
-        select, input[type=range] {
-            background: #1a1a1a;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 5px 8px;
-        }
-
-        label { font-size: 13px; color: #9ca3af; }
-
-        details { width: 100%; max-width: 640px; }
-
-        summary {
-            cursor: pointer;
-            color: #6b7280;
-            font-size: 13px;
-            padding: 6px;
-            user-select: none;
-        }
-
-        .settings-box {
-            background: #111;
-            border: 1px solid #222;
-            border-radius: 8px;
-            padding: 12px;
+            max-width: 375px;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-top: 6px;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
         }
 
-        input[type=text] {
-            background: #1a1a1a;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 6px 8px;
-            width: 100%;
-            font-size: 13px;
+        .logo-area {
+            text-align: center;
+            margin-bottom: 60px;
         }
 
-        textarea {
-            background: #1a1a1a;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 8px;
+        .logo {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 16px;
+            border-radius: 50%;
+            background: white;
+            padding: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        h1 {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        h1 .paths { color: #4A90D9; }
+        h1 .ai    { color: #FF9500; }
+
+        .buttons-area {
             width: 100%;
-            font-size: 12px;
-            height: 120px;
-            resize: vertical;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .option-btn {
+            width: 100%;
+            height: 140px;
+            border: none;
+            border-radius: 24px;
+            font-family: 'Nunito', sans-serif;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            transition: transform 0.15s ease;
+            text-decoration: none;
+        }
+
+        .option-btn:active { transform: scale(0.96); }
+
+        .camera-btn  { background: #FF9500; }
+        .route-btn   { background: #34C759; }
+
+        .btn-icon { font-size: 48px; }
+        .btn-text { font-size: 22px; font-weight: 800; letter-spacing: 0.3px; }
+
+        @media (min-width: 376px) {
+            .mobile-container {
+                border-radius: 40px;
+                height: 812px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
         }
     </style>
 </head>
 <body>
-
-    <h1>Paths<span>AI</span></h1>
-
-    <div id="videoContainer">
-        <video id="videoFeed" autoplay playsinline muted></video>
-        <canvas id="segCanvas"></canvas>
-        <div id="segStatus">⏳ Cargando segmentador...</div>
-    </div>
-
-    <canvas id="captureCanvas"></canvas>
-
-    <div id="responseBox">Iniciando PathsAI...</div>
-
-    <div class="controls-row">
-        <label>Qwen cada:
-            <select id="intervalSelect">
-                <option value="1000">1s</option>
-                <option value="2000">2s</option>
-                <option value="3000" selected>3s</option>
-                <option value="5000">5s</option>
-                <option value="10000">10s</option>
-            </select>
-        </label>
-        <label><input type="checkbox" id="ttsEnabled"> TTS</label>
-        <label>Vel:
-            <input type="range" id="ttsRate" min="0.5" max="2" step="0.1" value="1.2" style="width:70px">
-            <span id="ttsRateLabel">1.2</span>
-        </label>
-        <button id="startButton" class="start">Iniciar</button>
-    </div>
-
-    <details>
-        <summary>⚙️ Configuración avanzada</summary>
-        <div class="settings-box">
-            <label>API Qwen:<br>
-                <input type="text" id="baseURL" value="http://localhost:8080">
-            </label>
-            <label>Idioma TTS:
-                <select id="ttsLang">
-                    <option value="es-MX">Español (México)</option>
-                    <option value="es-ES">Español (España)</option>
-                    <option value="en-US">English (US)</option>
-                </select>
-            </label>
-            <label>Prompt:<br>
-                <textarea id="instructionText"></textarea>
-            </label>
+    <div class="mobile-container">
+        <div class="logo-area">
+            <img src="logo.png" alt="PathsAI" class="logo">
+            <h1><span class="paths">Paths</span><span class="ai">AI</span></h1>
         </div>
-    </details>
 
-    <script type="module">
-        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+        <div class="buttons-area">
+            <a class="option-btn camera-btn" href="camera.html">
+                <div class="btn-icon">👓</div>
+                <div class="btn-text">Solo Cámara</div>
+            </a>
 
-        // ── Paleta para 150 clases ADE20K — ángulo dorado para distribución uniforme ──
-        function hslToRgb(h, s, l) {
-            h /= 360; s /= 100; l /= 100;
-            const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-            const p = 2 * l - q;
-            const f = (t) => {
-                if (t < 0) t += 1; if (t > 1) t -= 1;
-                if (t < 1/6) return p + (q - p) * 6 * t;
-                if (t < 1/2) return q;
-                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                return p;
-            };
-            return [Math.round(f(h+1/3)*255), Math.round(f(h)*255), Math.round(f(h-1/3)*255)];
-        }
-
-        const N_CLASSES = 150;
-        const PALETTE   = new Uint8ClampedArray(N_CLASSES * 4);
-        for (let i = 0; i < N_CLASSES; i++) {
-            const hue        = (i * 137.508) % 360; // ángulo dorado = colores bien distribuidos
-            const [r, g, b]  = hslToRgb(hue, 62, 62);
-            PALETTE[i*4]     = r;
-            PALETTE[i*4 + 1] = g;
-            PALETTE[i*4 + 2] = b;
-            PALETTE[i*4 + 3] = 128;
-        }
-
-        // ── DOM ──────────────────────────────────────────────────────────────
-        const video           = document.getElementById('videoFeed');
-        const segCanvas       = document.getElementById('segCanvas');
-        const captureCanvas   = document.getElementById('captureCanvas');
-        const segStatus       = document.getElementById('segStatus');
-        const responseBox     = document.getElementById('responseBox');
-        const baseURL         = document.getElementById('baseURL');
-        const instructionText = document.getElementById('instructionText');
-        const intervalSelect  = document.getElementById('intervalSelect');
-        const startButton     = document.getElementById('startButton');
-        const ttsEnabled      = document.getElementById('ttsEnabled');
-        const ttsLang         = document.getElementById('ttsLang');
-        const ttsRate         = document.getElementById('ttsRate');
-        const ttsRateLabel    = document.getElementById('ttsRateLabel');
-
-        // ── Estado ───────────────────────────────────────────────────────────
-        let stream         = null;
-        let isProcessing   = false;
-        let qwenIntervalId = null;
-        let segLoopActive  = false;
-        let segmenter      = null;
-        let frameCount     = 0;
-        let fpsTimer       = performance.now();
-
-        // Canvas auxiliar reutilizable para escalar la máscara
-        const tmpCanvas = document.createElement('canvas');
-        const tmpCtx    = tmpCanvas.getContext('2d', { willReadFrequently: false });
-
-        // ── Prompt ───────────────────────────────────────────────────────────
-        instructionText.value = `Eres PathsAI, los ojos de una persona ciega que está caminando. Analiza la imagen y responde SIEMPRE en español con máximo 3 frases cortas y directas. Tu respuesta debe tener SIEMPRE esta estructura:
-
-PRIMERO — Describe brevemente qué hay adelante: el entorno, espacio o contexto general. Ejemplo: "Estás en un pasillo.", "Hay una sala con muebles.", "Estás frente a una puerta.", "Hay una calle con personas."
-
-SEGUNDO — Si hay obstáculos, personas o peligros: indica qué es, dónde está (izquierda, derecha, adelante, al centro) y qué tan cerca (muy cerca <1m, cerca 1-2m, a distancia >3m). Ejemplo: "Silla al centro, muy cerca." / "Persona a la derecha, cerca." / "Grupo de personas adelante, a distancia."
-
-TERCERO — Da una instrucción de movimiento directa y accionable: "Gira a la izquierda.", "Desvíate a la derecha.", "Detente.", "Continúa adelante con precaución.", "Cambia de ruta, hay tumulto al frente."
-
-Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
-
-        // ── TTS ──────────────────────────────────────────────────────────────
-        ttsRate.addEventListener('input', () => {
-            ttsRateLabel.textContent = parseFloat(ttsRate.value).toFixed(1);
-        });
-
-        setInterval(() => {
-            if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
-        }, 5000);
-
-        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-
-        function speak(text) {
-            if (!ttsEnabled.checked || !text) return;
-            window.speechSynthesis.cancel();
-            const utt = new SpeechSynthesisUtterance(text);
-            utt.lang = ttsLang.value;
-            utt.rate = parseFloat(ttsRate.value);
-            const voices = window.speechSynthesis.getVoices();
-            const match = voices.find(v => v.lang === ttsLang.value)
-                       || voices.find(v => v.lang.startsWith(ttsLang.value.split('-')[0]));
-            if (match) utt.voice = match;
-            utt.onerror = e => console.error('[TTS]', e.error);
-            window.speechSynthesis.speak(utt);
-        }
-
-        // ── Cámara ───────────────────────────────────────────────────────────
-        async function initCamera() {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { ideal: 'environment' } },
-                    audio: false
-                });
-                video.srcObject = stream;
-                responseBox.textContent = 'Cámara lista. Presiona Iniciar.';
-            } catch (err) {
-                responseBox.textContent = `Error cámara: ${err.message}`;
-            }
-        }
-
-        function captureDataURL() {
-            if (!stream || !video.videoWidth) return null;
-            captureCanvas.width  = video.videoWidth;
-            captureCanvas.height = video.videoHeight;
-            captureCanvas.getContext('2d').drawImage(video, 0, 0);
-            return captureCanvas.toDataURL('image/jpeg', 0.75);
-        }
-
-        // ── Dibujar máscaras SegFormer (150 clases ADE20K) ───────────────────
-        function drawMasks(results) {
-            results.forEach((seg) => {
-                const mask = seg.mask;
-                const mw   = mask.width;
-                const mh   = mask.height;
-                const ch   = mask.channels || 1;
-
-                if (tmpCanvas.width !== mw || tmpCanvas.height !== mh) {
-                    tmpCanvas.width  = mw;
-                    tmpCanvas.height = mh;
-                }
-
-                const imgData = tmpCtx.createImageData(mw, mh);
-                const pix     = imgData.data;
-
-                for (let i = 0; i < mw * mh; i++) {
-                    if (mask.data[i * ch] > 128) {
-                        // Asignar color único por clase usando hash del label
-                        const idx  = labelToIndex(seg.label) * 4;
-                        pix[i*4]   = PALETTE[idx];
-                        pix[i*4+1] = PALETTE[idx+1];
-                        pix[i*4+2] = PALETTE[idx+2];
-                        pix[i*4+3] = PALETTE[idx+3];
-                    }
-                }
-
-                tmpCtx.putImageData(imgData, 0, 0);
-
-                // Blending: 70% nuevo + 30% anterior para transición suave
-                const ctx = segCanvas.getContext('2d');
-                ctx.globalAlpha = 0.7;
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'medium';
-                ctx.drawImage(tmpCanvas, 0, 0, segCanvas.width, segCanvas.height);
-                ctx.globalAlpha = 1.0;
-            });
-        }
-
-        // Mapea label string → índice de color estable
-        const labelCache = new Map();
-        let   labelCounter = 0;
-        function labelToIndex(label) {
-            if (!labelCache.has(label)) labelCache.set(label, labelCounter++ % N_CLASSES);
-            return labelCache.get(label);
-        }
-
-        // ── Loop de segmentación ──────────────────────────────────────────────
-        async function segLoop() {
-            if (!segLoopActive) return;
-
-            const dataURL = captureDataURL();
-            if (dataURL) {
-                try {
-                    const t0      = Date.now();
-                    const results = await segmenter(dataURL);
-                    const ms      = Date.now() - t0;
-
-                    // Limpiar canvas antes de dibujar nuevo frame
-                    segCanvas.getContext('2d').clearRect(0, 0, segCanvas.width, segCanvas.height);
-                    drawMasks(results);
-
-                    frameCount++;
-                    const now = performance.now();
-                    if (now - fpsTimer >= 1000) {
-                        segStatus.textContent = `🟢 ${frameCount} FPS · ${ms}ms`;
-                        frameCount = 0;
-                        fpsTimer   = now;
-                    }
-                } catch (e) {
-                    segStatus.textContent = `🔴 ${e.message}`;
-                }
-            }
-            setTimeout(segLoop, 100); // cola el siguiente frame
-        }
-
-        // ── Inferencia Qwen ──────────────────────────────────────────────────
-        async function sendToQwen() {
-            if (!isProcessing) return;
-            const dataURL = captureDataURL();
-            if (!dataURL) return;
-
-            try {
-                const res = await fetch(`${baseURL.value}/v1/chat/completions`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        max_tokens: 100,
-                        messages: [{
-                            role: 'user',
-                            content: [
-                                { type: 'text', text: instructionText.value },
-                                { type: 'image_url', image_url: { url: dataURL } }
-                            ]
-                        }]
-                    })
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                const text = data.choices[0].message.content;
-                responseBox.textContent = text;
-                speak(text);
-            } catch (e) {
-                responseBox.textContent = `Error Qwen: ${e.message}`;
-            }
-        }
-
-        // ── Controles ────────────────────────────────────────────────────────
-        function handleStart() {
-            if (!stream) { alert('Cámara no disponible'); return; }
-            isProcessing  = true;
-            segLoopActive = true;
-
-            segCanvas.width  = video.videoWidth  || 640;
-            segCanvas.height = video.videoHeight || 480;
-
-            startButton.textContent = 'Detener';
-            startButton.className   = 'stop';
-
-            sendToQwen();
-            qwenIntervalId = setInterval(sendToQwen, parseInt(intervalSelect.value));
-
-            if (segmenter) segLoop();
-        }
-
-        function handleStop() {
-            isProcessing  = false;
-            segLoopActive = false;
-            if (qwenIntervalId) { clearInterval(qwenIntervalId); qwenIntervalId = null; }
-
-            startButton.textContent = 'Iniciar';
-            startButton.className   = 'start';
-            segCanvas.getContext('2d').clearRect(0, 0, segCanvas.width, segCanvas.height);
-            segStatus.textContent = '⏸️ Pausado';
-        }
-
-        startButton.addEventListener('click', () => {
-            isProcessing ? handleStop() : handleStart();
-        });
-
-        // ── Init ─────────────────────────────────────────────────────────────
-        window.addEventListener('DOMContentLoaded', async () => {
-            await initCamera();
-
-            video.addEventListener('loadedmetadata', () => {
-                segCanvas.width  = video.videoWidth;
-                segCanvas.height = video.videoHeight;
-            });
-
-            // SegFormer ADE20K — 150 clases, WebGPU si está disponible (5-10x más rápido)
-            try {
-                const useWebGPU = !!navigator.gpu;
-                segStatus.textContent = `⏳ Cargando... (${useWebGPU ? 'WebGPU' : 'WASM'})`;
-
-                segmenter = await pipeline(
-                    'image-segmentation',
-                    'Xenova/segformer-b0-finetuned-ade-512-512',
-                    {
-                        device: useWebGPU ? 'webgpu' : 'wasm',
-                        dtype:  useWebGPU ? 'fp32'   : 'q8'    // q8 = 2x más rápido en WASM
-                    }
-                );
-
-                segStatus.textContent = `✅ Listo · ${useWebGPU ? 'WebGPU 🚀' : 'WASM (CPU)'}`;
-                if (isProcessing) segLoop();
-            } catch (e) {
-                segStatus.textContent = `⚠️ Sin segmentación: ${e.message}`;
-                console.error(e);
-            }
-        });
-
-        window.addEventListener('beforeunload', () => {
-            if (stream) stream.getTracks().forEach(t => t.stop());
-            if (qwenIntervalId) clearInterval(qwenIntervalId);
-        });
-
-    </script>
+            <a class="option-btn route-btn" href="navigation.html">
+                <div class="btn-icon">🗺️</div>
+                <div class="btn-text">Ruta Guiada</div>
+            </a>
+        </div>
+    </div>
 </body>
 </html>
