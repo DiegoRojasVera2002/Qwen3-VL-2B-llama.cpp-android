@@ -1,4 +1,4 @@
-const CACHE = 'pathsai-v1';
+const CACHE = 'pathsai-v2';
 const ASSETS = [
   './index.html',
   './camera.html',
