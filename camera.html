@@ -2,59 +2,123 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PathsAI — Cámara</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#4A90D9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.json">
+    <title>PathsAI — Camara</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --blue: #4A90D9;
+            --orange: #FF9500;
+            --green: #34C759;
+            --red: #FF3B30;
+            --bg: #FFFFFF;
+            --surface: #F5F7FA;
+            --surface2: #EBEBF0;
+            --border: #E5E5EA;
+            --text: #1C1C1E;
+            --text-secondary: #8E8E93;
+            --radius-xl: 24px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            font-family: 'Nunito', sans-serif;
+            color: var(--text);
+            overscroll-behavior: none;
+        }
 
         body {
-            font-family: -apple-system, sans-serif;
-            background: #0d0d0d;
-            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .screen {
+            width: 100%;
+            max-width: 412px;
+            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px 20px;
-            min-height: 100vh;
+            background: var(--bg);
         }
 
         /* ── Header ── */
         .header {
             display: flex;
             align-items: center;
-            width: 100%;
-            max-width: 640px;
-            gap: 10px;
+            gap: 12px;
+            padding: calc(var(--safe-top) + 14px) 20px 14px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .back-btn {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            color: #e0e0e0;
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 18px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--blue);
+            font-size: 20px;
             cursor: pointer;
             text-decoration: none;
-            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.1s;
+        }
+        .back-btn:active { background: var(--surface2); }
+
+        .header-title { flex: 1; }
+        .header-title h1 {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+        .header-title h1 .paths { color: var(--blue); }
+        .header-title h1 .ai   { color: var(--orange); }
+        .header-title p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-top: 1px;
         }
 
-        .header h1 { font-size: 20px; color: #fff; letter-spacing: 1px; }
-        .header h1 span { color: #4ade80; }
-
-        /* ── Video + overlay ── */
-        #videoContainer {
-            position: relative;
-            width: 100%;
-            max-width: 640px;
-            border-radius: 12px;
+        /* ── Video Card ── */
+        .video-card {
+            margin: 16px 16px 0;
+            border-radius: var(--radius-xl);
             overflow: hidden;
-            background: #000;
-            border: 2px solid #222;
+            background: #0d0d10;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
         }
 
-        #videoFeed { display: block; width: 100%; height: auto; }
+        #videoFeed {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+        }
 
         #segCanvas {
             position: absolute;
@@ -66,173 +130,390 @@
 
         #segStatus {
             position: absolute;
-            bottom: 8px; left: 8px;
-            background: rgba(0,0,0,0.75);
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
             font-size: 11px;
-            font-family: monospace;
-            padding: 3px 8px;
-            border-radius: 4px;
-            color: #4ade80;
+            font-family: 'Nunito', monospace;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: #fff;
         }
 
         #captureCanvas { display: none; }
 
-        /* ── Respuesta Qwen ── */
-        #responseBox {
-            width: 100%;
-            max-width: 640px;
-            background: #111827;
-            border: 1px solid #1f2937;
-            border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 14px;
-            line-height: 1.6;
-            min-height: 70px;
-            color: #d1fae5;
+        /* ── Response Box ── */
+        .response-card {
+            margin: 14px 16px 0;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--blue);
+            padding: 14px 16px;
+            min-height: 80px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
         }
 
-        /* ── Controles ── */
-        .controls-row {
+        .response-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        #responseBox {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.6;
+            color: var(--text);
+            flex: 1;
+        }
+
+        /* ── Controles principales ── */
+        .controls-main {
+            margin: 14px 16px 0;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-            max-width: 640px;
         }
 
         #startButton {
-            padding: 10px 28px;
+            flex: 1;
+            height: 54px;
             border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
+            border-radius: var(--radius-lg);
+            font-family: 'Nunito', sans-serif;
+            font-size: 17px;
+            font-weight: 800;
             cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            letter-spacing: 0.2px;
         }
 
-        #startButton.start { background: #16a34a; color: #fff; }
-        #startButton.stop  { background: #dc2626; color: #fff; }
+        #startButton:active { transform: scale(0.97); }
 
-        select, input[type=range] {
-            background: #1a1a1a;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 5px 8px;
+        #startButton.start {
+            background: linear-gradient(135deg, var(--green), #28A745);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(52,199,89,0.35);
         }
 
-        label { font-size: 13px; color: #9ca3af; }
-
-        /* ── Config avanzada ── */
-        details { width: 100%; max-width: 640px; }
-
-        summary {
-            cursor: pointer;
-            color: #6b7280;
-            font-size: 13px;
-            padding: 6px;
-            user-select: none;
+        #startButton.stop {
+            background: linear-gradient(135deg, var(--red), #CC2A22);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(255,59,48,0.35);
         }
 
-        .settings-box {
-            background: #111;
-            border: 1px solid #222;
-            border-radius: 8px;
-            padding: 12px;
+        .interval-pill {
+            height: 54px;
+            padding: 0 16px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-lg);
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+        }
+
+        .interval-pill label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+        }
+
+        #intervalSelect {
+            background: transparent;
+            border: none;
+            font-family: 'Nunito', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text);
+            cursor: pointer;
+            padding: 0;
+            outline: none;
+        }
+
+        .tts-pill {
+            height: 54px;
+            width: 54px;
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+            transition: background 0.1s, border-color 0.1s;
+            flex-shrink: 0;
+        }
+
+        .tts-pill.active {
+            background: #EBF4FF;
+            border-color: var(--blue);
+        }
+
+        .tts-pill .icon { font-size: 20px; }
+        .tts-pill .lbl {
+            font-size: 9px;
+            font-weight: 800;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .tts-pill.active .lbl { color: var(--blue); }
+
+        /* ── Velocidad TTS ── */
+        .tts-rate-row {
+            margin: 12px 16px 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
             gap: 10px;
-            margin-top: 6px;
         }
 
-        input[type=text] {
-            background: #1a1a1a;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 6px 8px;
-            width: 100%;
-            font-size: 13px;
-        }
-
-        textarea {
-            background: #1a1a1a;
-            color: #e0e0e0;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 8px;
-            width: 100%;
+        .tts-rate-row label {
             font-size: 12px;
-            height: 120px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            flex-shrink: 0;
+        }
+
+        .tts-rate-row input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--border);
+            outline: none;
+        }
+
+        .tts-rate-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--blue);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(74,144,217,0.4);
+        }
+
+        .tts-rate-row span {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text);
+            min-width: 28px;
+            text-align: right;
+        }
+
+        /* ── Config avanzada ── */
+        .settings-section {
+            margin: 12px 16px calc(var(--safe-bottom) + 20px);
+        }
+
+        .settings-toggle {
+            width: 100%;
+            background: none;
+            border: none;
+            border-radius: var(--radius-lg);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-family: 'Nunito', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            transition: background 0.1s;
+        }
+
+        .settings-toggle:active { background: var(--surface2); }
+        .settings-toggle .arrow { margin-left: auto; transition: transform 0.2s; }
+        .settings-toggle.open .arrow { transform: rotate(180deg); }
+
+        .settings-body {
+            display: none;
+            padding: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            margin-top: -1px;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .settings-body.open { display: flex; }
+
+        .field { display: flex; flex-direction: column; gap: 6px; }
+
+        .field label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .field input[type=text],
+        .field select,
+        .field textarea {
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            width: 100%;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .field input[type=text]:focus,
+        .field select:focus,
+        .field textarea:focus {
+            border-color: var(--blue);
+        }
+
+        .field textarea {
+            height: 140px;
             resize: vertical;
+            line-height: 1.5;
+            font-size: 12px;
+        }
+
+        @media (min-width: 413px) {
+            .screen {
+                min-height: auto;
+                height: 891px;
+                border-radius: 44px;
+                box-shadow: 0 24px 80px rgba(0,0,0,0.22);
+                border: 8px solid #111;
+                overflow: hidden;
+            }
+            body {
+                background: #F0F0F0;
+                align-items: center;
+                min-height: 100vh;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="screen">
 
-    <div class="header">
-        <a class="back-btn" href="index.html">←</a>
-        <h1>Paths<span>AI</span> — Solo Cámara</h1>
-    </div>
-
-    <div id="videoContainer">
-        <video id="videoFeed" autoplay playsinline muted></video>
-        <canvas id="segCanvas"></canvas>
-        <div id="segStatus">⏳ Cargando segmentador...</div>
-    </div>
-
-    <canvas id="captureCanvas"></canvas>
-
-    <div id="responseBox">Iniciando PathsAI...</div>
-
-    <div class="controls-row">
-        <label>Qwen cada:
-            <select id="intervalSelect">
-                <option value="1000">1s</option>
-                <option value="2000">2s</option>
-                <option value="3000" selected>3s</option>
-                <option value="5000">5s</option>
-                <option value="10000">10s</option>
-            </select>
-        </label>
-        <label><input type="checkbox" id="ttsEnabled"> TTS</label>
-        <label>Vel:
-            <input type="range" id="ttsRate" min="0.5" max="2" step="0.1" value="1.2" style="width:70px">
-            <span id="ttsRateLabel">1.2</span>
-        </label>
-        <button id="startButton" class="start">Iniciar</button>
-    </div>
-
-    <details>
-        <summary>⚙️ Configuración avanzada</summary>
-        <div class="settings-box">
-            <label>API Qwen:<br>
-                <input type="text" id="baseURL" value="http://localhost:8080">
-            </label>
-            <label>Idioma TTS:
-                <select id="ttsLang">
-                    <option value="es-MX">Español (México)</option>
-                    <option value="es-ES">Español (España)</option>
-                    <option value="en-US">English (US)</option>
-                </select>
-            </label>
-            <label>Prompt:<br>
-                <textarea id="instructionText"></textarea>
-            </label>
+        <!-- Header -->
+        <div class="header">
+            <a class="back-btn" href="index.html">&#8592;</a>
+            <div class="header-title">
+                <h1><span class="paths">Paths</span><span class="ai">AI</span></h1>
+                <p>Solo Camara</p>
+            </div>
         </div>
-    </details>
+
+        <!-- Video -->
+        <div class="video-card">
+            <video id="videoFeed" autoplay playsinline muted></video>
+            <canvas id="segCanvas"></canvas>
+            <div id="segStatus">Cargando segmentador...</div>
+        </div>
+
+        <canvas id="captureCanvas"></canvas>
+
+        <!-- Respuesta -->
+        <div class="response-card">
+            <div class="response-icon">👁️</div>
+            <div id="responseBox">Iniciando PathsAI...</div>
+        </div>
+
+        <!-- Controles principales -->
+        <div class="controls-main">
+            <button id="startButton" class="start">Iniciar</button>
+
+            <div class="interval-pill">
+                <label for="intervalSelect">Cada</label>
+                <select id="intervalSelect">
+                    <option value="1000">1 s</option>
+                    <option value="2000">2 s</option>
+                    <option value="3000">3 s</option>
+                    <option value="5000" selected>5 s</option>
+                    <option value="10000">10 s</option>
+                </select>
+            </div>
+
+            <div class="tts-pill active" id="ttsPill">
+                <span class="icon">🔊</span>
+                <span class="lbl">Voz</span>
+                <input type="checkbox" id="ttsEnabled" checked style="display:none">
+            </div>
+        </div>
+
+        <!-- Velocidad TTS -->
+        <div class="tts-rate-row">
+            <label>Velocidad</label>
+            <input type="range" id="ttsRate" min="0.5" max="2" step="0.1" value="1.2">
+            <span id="ttsRateLabel">1.2x</span>
+        </div>
+
+        <!-- Config avanzada -->
+        <div class="settings-section">
+            <button class="settings-toggle" id="settingsToggle">
+                <span>⚙️</span>
+                <span>Configuracion avanzada</span>
+                <span class="arrow">▼</span>
+            </button>
+            <div class="settings-body" id="settingsBody">
+                <div class="field">
+                    <label>URL del servidor Qwen</label>
+                    <input type="text" id="baseURL" value="http://localhost:8080">
+                </div>
+                <div class="field">
+                    <label>Idioma de voz</label>
+                    <select id="ttsLang">
+                        <option value="es-MX">Espanol (Mexico)</option>
+                        <option value="es-ES">Espanol (Espana)</option>
+                        <option value="en-US">English (US)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Prompt de instrucciones</label>
+                    <textarea id="instructionText"></textarea>
+                </div>
+            </div>
+        </div>
+
+    </div>
 
     <script type="module">
         import { ImageSegmenter, FilesetResolver }
             from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
 
-        // ── Paleta DeepLab v3 — 21 clases Pascal VOC ─────────────────────────
-        // Clase 0 (background): tinte sutil para que toda la escena esté coloreada
+        // ── Paleta DeepLab v3 — 21 clases Pascal VOC ──────────────────────────
         // prettier-ignore
         const PALETTE = new Uint8ClampedArray([
           //  R    G    B    A
-             60,  60, 120,  50,   // 0  background  — azul muy sutil
+             60,  60, 120,  50,   // 0  background
             220, 120,  80, 145,   // 1  aeroplane
             100, 210, 160, 145,   // 2  bicycle
             240, 190,  80, 145,   // 3  bird
@@ -247,7 +528,7 @@
             190, 120, 230, 145,   // 12 dog
             240, 210, 120, 145,   // 13 horse
             120, 200, 240, 145,   // 14 motorbike
-            240,  90,  90, 170,   // 15 person  — rojo, más visible
+            240,  90,  90, 170,   // 15 person
              90, 230, 130, 145,   // 16 pottedplant
             240, 190, 190, 145,   // 17 sheep
             200, 170, 130, 145,   // 18 sofa
@@ -266,9 +547,24 @@
         const intervalSelect  = document.getElementById('intervalSelect');
         const startButton     = document.getElementById('startButton');
         const ttsEnabled      = document.getElementById('ttsEnabled');
+        const ttsPill         = document.getElementById('ttsPill');
         const ttsLang         = document.getElementById('ttsLang');
         const ttsRate         = document.getElementById('ttsRate');
         const ttsRateLabel    = document.getElementById('ttsRateLabel');
+        const settingsToggle  = document.getElementById('settingsToggle');
+        const settingsBody    = document.getElementById('settingsBody');
+
+        // ── Accordeon de ajustes ─────────────────────────────────────────────
+        settingsToggle.addEventListener('click', () => {
+            const open = settingsBody.classList.toggle('open');
+            settingsToggle.classList.toggle('open', open);
+        });
+
+        // ── TTS pill toggle ──────────────────────────────────────────────────
+        ttsPill.addEventListener('click', () => {
+            ttsEnabled.checked = !ttsEnabled.checked;
+            ttsPill.classList.toggle('active', ttsEnabled.checked);
+        });
 
         // ── Estado ───────────────────────────────────────────────────────────
         let stream         = null;
@@ -284,19 +580,21 @@
         const tmpCtx    = tmpCanvas.getContext('2d');
 
         // ── Prompt ───────────────────────────────────────────────────────────
-        instructionText.value = `Eres PathsAI, los ojos de una persona ciega que está caminando. Analiza la imagen y responde SIEMPRE en español con máximo 3 frases cortas y directas. Tu respuesta debe tener SIEMPRE esta estructura:
+        instructionText.value = `Eres PathsAI, asistente visual para una persona con discapacidad visual que esta caminando. Analiza la imagen y responde SIEMPRE en espanol siguiendo esta estructura de dos partes:
 
-PRIMERO — Describe brevemente qué hay adelante: el entorno, espacio o contexto general. Ejemplo: "Estás en un pasillo.", "Hay una sala con muebles.", "Estás frente a una puerta.", "Hay una calle con personas."
+PARTE 1 - CONTEXTUAL: Describe el entorno y lo relevante que hay adelante. Menciona obstaculos, personas o peligros con su posicion (izquierda, derecha, adelante, al centro) y distancia aproximada (muy cerca menos de 1 metro, cerca 1 a 2 metros, a distancia mas de 3 metros). Si el contexto es urgente se mas breve. Ejemplos: "Hay una multitud de personas cerca al semaforo, mucho cuidado." / "Hay una silla al centro, muy cerca." / "Estas en un pasillo amplio y despejado."
 
-SEGUNDO — Si hay obstáculos, personas o peligros: indica qué es, dónde está (izquierda, derecha, adelante, al centro) y qué tan cerca (muy cerca <1m, cerca 1-2m, a distancia >3m). Ejemplo: "Silla al centro, muy cerca." / "Persona a la derecha, cerca." / "Grupo de personas adelante, a distancia."
+PARTE 2 - DIRECTA: Una sola frase corta con la instruccion accionable que el usuario debe seguir. Ejemplos: "Gira a la izquierda y sigue adelante." / "Detente y espera." / "Deviate a la derecha." / "Continua adelante con precaucion."
 
-TERCERO — Da una instrucción de movimiento directa y accionable: "Gira a la izquierda.", "Desvíate a la derecha.", "Detente.", "Continúa adelante con precaución.", "Cambia de ruta, hay tumulto al frente."
-
-Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
+REGLAS ESTRICTAS:
+- NO escribas etiquetas como CONTEXTUAL o DIRECTA en la respuesta final.
+- Separa ambas partes con un punto para que haya una pausa natural al escuchar.
+- Maximo 3 frases en total. Respuesta muy concisa.
+- Si no hay obstaculos ni peligros: "Camino despejado. Continua adelante."`;
 
         // ── TTS ──────────────────────────────────────────────────────────────
         ttsRate.addEventListener('input', () => {
-            ttsRateLabel.textContent = parseFloat(ttsRate.value).toFixed(1);
+            ttsRateLabel.textContent = parseFloat(ttsRate.value).toFixed(1) + 'x';
         });
 
         setInterval(() => {
@@ -319,7 +617,7 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
             window.speechSynthesis.speak(utt);
         }
 
-        // ── Cámara ───────────────────────────────────────────────────────────
+        // ── Camara ───────────────────────────────────────────────────────────
         async function initCamera() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
@@ -327,9 +625,9 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
                     audio: false
                 });
                 video.srcObject = stream;
-                responseBox.textContent = 'Cámara lista. Presiona Iniciar.';
+                responseBox.textContent = 'Camara lista. Pulsa Iniciar.';
             } catch (err) {
-                responseBox.textContent = `Error cámara: ${err.message}`;
+                responseBox.textContent = `Error camara: ${err.message}`;
             }
         }
 
@@ -341,7 +639,7 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
             return captureCanvas.toDataURL('image/jpeg', 0.75);
         }
 
-        // ── Dibujar máscara de categorías ────────────────────────────────────
+        // ── Dibujar mascara ──────────────────────────────────────────────────
         function drawMask(result) {
             const mask = result.categoryMask;
             if (!mask) return;
@@ -375,7 +673,7 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
             ctx.drawImage(tmpCanvas, 0, 0, segCanvas.width, segCanvas.height);
         }
 
-        // ── Loop de segmentación RAF ──────────────────────────────────────────
+        // ── Loop de segmentacion RAF ─────────────────────────────────────────
         function segLoop(timestamp) {
             if (!segLoopActive) return;
             requestAnimationFrame(segLoop);
@@ -390,7 +688,7 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
                 frameCount++;
                 const now = performance.now();
                 if (now - fpsTimer >= 1000) {
-                    segStatus.textContent = `🟢 ${frameCount} FPS`;
+                    segStatus.textContent = `${frameCount} FPS`;
                     frameCount = 0;
                     fpsTimer   = now;
                 }
@@ -429,7 +727,7 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
 
         // ── Controles ────────────────────────────────────────────────────────
         function handleStart() {
-            if (!stream) { alert('Cámara no disponible'); return; }
+            if (!stream) { alert('Camara no disponible'); return; }
             isProcessing  = true;
             segLoopActive = true;
 
@@ -452,7 +750,7 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
             startButton.textContent = 'Iniciar';
             startButton.className   = 'start';
             segCanvas.getContext('2d').clearRect(0, 0, segCanvas.width, segCanvas.height);
-            segStatus.textContent = '⏸️ Pausado';
+            segStatus.textContent = 'Pausado';
         }
 
         startButton.addEventListener('click', () => {
@@ -481,10 +779,11 @@ Si no hay obstáculos ni peligros: "Camino despejado, continúa adelante."`;
                     outputCategoryMask: true,
                     outputConfidenceMasks: false
                 });
-                segStatus.textContent = '✅ Segmentador listo (GPU)';
+                segStatus.textContent = 'Segmentador listo';
                 if (isProcessing) requestAnimationFrame(segLoop);
             } catch (e) {
-                segStatus.textContent = `⚠️ Sin segmentación: ${e.message}`;
+                console.warn('[Seg] No disponible:', e.message);
+                segStatus.style.display = 'none';
             }
         });
 

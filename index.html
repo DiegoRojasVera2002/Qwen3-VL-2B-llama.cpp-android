@@ -2,116 +2,262 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#4A90D9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PathsAI">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
     <title>PathsAI</title>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --blue: #4A90D9;
+            --orange: #FF9500;
+            --green: #34C759;
+            --bg: #FFFFFF;
+            --surface: #F5F7FA;
+            --border: #E5E5EA;
+            --text: #1C1C1E;
+            --text-secondary: #8E8E93;
+            --radius-xl: 28px;
+            --radius-lg: 20px;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            font-family: 'Nunito', sans-serif;
+            color: var(--text);
+            overscroll-behavior: none;
+        }
 
         body {
-            font-family: 'Nunito', sans-serif;
-            background: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .screen {
+            width: 100%;
+            max-width: 412px;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .mobile-container {
-            width: 100%;
-            max-width: 375px;
-            height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 24px;
+            padding:
+                calc(var(--safe-top) + 48px)
+                24px
+                calc(var(--safe-bottom) + 40px);
+            background: var(--bg);
         }
 
+        /* ── Logo ── */
         .logo-area {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-
-        .logo {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 16px;
-            border-radius: 50%;
-            background: white;
-            padding: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-        }
-
-        h1 {
-            font-size: 36px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-
-        h1 .paths { color: #4A90D9; }
-        h1 .ai    { color: #FF9500; }
-
-        .buttons-area {
-            width: 100%;
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .logo-ring {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 3px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(74,144,217,0.15);
+        }
+
+        .logo-ring img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+
+        .brand {
+            text-align: center;
+        }
+
+        .brand h1 {
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .brand h1 .paths { color: var(--blue); }
+        .brand h1 .ai    { color: var(--orange); }
+
+        .brand p {
+            margin-top: 8px;
+            font-size: 15px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* ── Botones ── */
+        .buttons-area {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .option-btn {
             width: 100%;
-            height: 140px;
+            min-height: 130px;
             border: none;
-            border-radius: 24px;
+            border-radius: var(--radius-xl);
             font-family: 'Nunito', sans-serif;
             color: white;
             cursor: pointer;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            transition: transform 0.15s ease;
+            gap: 20px;
+            padding: 0 28px;
             text-decoration: none;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .option-btn:active { transform: scale(0.96); }
+        .option-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.08);
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
 
-        .camera-btn  { background: #FF9500; }
-        .route-btn   { background: #34C759; }
+        .option-btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        .option-btn:active::after { opacity: 1; }
 
-        .btn-icon { font-size: 48px; }
-        .btn-text { font-size: 22px; font-weight: 800; letter-spacing: 0.3px; }
+        .camera-btn { background: linear-gradient(135deg, #FF9500, #FF6B00); }
+        .route-btn  { background: linear-gradient(135deg, #34C759, #28A745); }
 
-        @media (min-width: 376px) {
-            .mobile-container {
-                border-radius: 40px;
-                height: 812px;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        .btn-icon {
+            font-size: 52px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .btn-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+        .btn-label { font-size: 22px; font-weight: 800; letter-spacing: 0.2px; }
+        .btn-desc  { font-size: 13px; font-weight: 600; opacity: 0.85; }
+
+        /* ── Footer ── */
+        .footer {
+            margin-top: 28px;
+            text-align: center;
+        }
+
+        .footer p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .install-hint {
+            display: none;
+            margin-top: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .install-hint.visible { display: block; }
+
+        @media (min-width: 413px) {
+            .screen {
+                min-height: auto;
+                height: 891px;
+                border-radius: 44px;
+                box-shadow: 0 24px 80px rgba(0,0,0,0.22);
+                border: 8px solid #111;
             }
+            body { background: #F0F0F0; }
         }
     </style>
 </head>
 <body>
-    <div class="mobile-container">
+    <div class="screen">
         <div class="logo-area">
-            <img src="logo.png" alt="PathsAI" class="logo">
-            <h1><span class="paths">Paths</span><span class="ai">AI</span></h1>
+            <div class="logo-ring">
+                <img src="logo.png" alt="PathsAI" onerror="this.style.display='none';this.parentElement.textContent='👁️'">
+            </div>
+            <div class="brand">
+                <h1><span class="paths">Paths</span><span class="ai">AI</span></h1>
+                <p>Asistente visual en tiempo real</p>
+            </div>
         </div>
 
         <div class="buttons-area">
             <a class="option-btn camera-btn" href="camera.html">
-                <div class="btn-icon">👓</div>
-                <div class="btn-text">Solo Cámara</div>
+                <div class="btn-icon">👁️</div>
+                <div class="btn-info">
+                    <span class="btn-label">Solo Camara</span>
+                    <span class="btn-desc">Descripcion en tiempo real</span>
+                </div>
             </a>
 
             <a class="option-btn route-btn" href="navigation.html">
                 <div class="btn-icon">🗺️</div>
-                <div class="btn-text">Ruta Guiada</div>
+                <div class="btn-info">
+                    <span class="btn-label">Ruta Guiada</span>
+                    <span class="btn-desc">Navegacion con destino</span>
+                </div>
             </a>
         </div>
+
+        <div class="footer">
+            <p>Huawei ICT Competition 2026</p>
+            <div class="install-hint" id="installHint">
+                Instala PathsAI: pulsa el menu del navegador y selecciona "Agregar a pantalla de inicio"
+            </div>
+        </div>
     </div>
+
+    <script>
+        // Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(r => console.log('[PWA] SW registrado:', r.scope))
+                .catch(e => console.warn('[PWA] SW error:', e));
+        }
+
+        // Mostrar hint de instalacion si no esta instalada
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || window.navigator.standalone;
+        if (!isStandalone) {
+            document.getElementById('installHint').classList.add('visible');
+        }
+
+        // Prompt de instalacion (Chrome/Android)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+    </script>
 </body>
 </html>
