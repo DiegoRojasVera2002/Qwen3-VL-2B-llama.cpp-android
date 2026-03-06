@@ -252,11 +252,9 @@
             document.getElementById('installHint').classList.add('visible');
         }
 
-        // Prompt de instalacion (Chrome/Android)
-        let deferredPrompt;
+        // Prompt de instalacion (Chrome/Android) — dejar que Chrome lo muestre solo
         window.addEventListener('beforeinstallprompt', e => {
-            e.preventDefault();
-            deferredPrompt = e;
+            // No llamar preventDefault para que Chrome muestre el banner nativo
         });
     </script>
 </body>

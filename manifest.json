@@ -2,7 +2,7 @@
   "name": "PathsAI",
   "short_name": "PathsAI",
   "description": "Asistente visual en tiempo real para personas con discapacidad visual",
-  "start_url": "./index.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#4A90D9",
